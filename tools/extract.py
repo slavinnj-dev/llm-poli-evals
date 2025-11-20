@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from tavily import TavilyClient
 
-load_dotenv("../")
+load_dotenv()
 tavily_key = os.getenv("TAVILY_API_KEY")
 tavily_client = TavilyClient(api_key=tavily_key)
 braintrust_project_name = os.getenv("BRAINTRUST_PROJECT_NAME")

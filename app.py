@@ -34,6 +34,7 @@ client = wrap_openai(OpenAI(
                      "x-bt-parent": f"project_id:{braintrust_project_id}"
                      },
 ))
-prompt = prompt_object.build(input=check_url, tools=tools)
+prompt = prompt_object.build(input=check_url)
 response = client.chat.completions.create(**prompt)
-pprint(response.choices[0].message.content)
+# TODO: need to execute the tool call and add msg
+pprint(response)
