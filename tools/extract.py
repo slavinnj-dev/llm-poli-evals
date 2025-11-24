@@ -40,6 +40,9 @@ definition = {
     }
   }
 
+# define span as a tool span
+# TODO: doesn't require a separate logger from parent app file?
+@traced(type="tool")
 def extract(url: str):
     urls = [url]
     response = tavily_client.extract(urls=urls, include_images=False, extract_depth="advanced")

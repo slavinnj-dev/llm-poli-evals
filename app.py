@@ -2,7 +2,8 @@ import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
-from braintrust import init_logger, load_prompt, wrap_openai, traced
+# TODO: fix duplicate span creation
+from braintrust import init_logger, load_prompt, wrap_openai, traced, start_span
 from pprint import pprint
 from tools import extract
 
@@ -67,18 +68,22 @@ def main():
     # URL of content to classify
     check_url = os.getenv("URL")
     # construct input as user message
-    
     analyze_results = analyze(check_url)
 
-    # add chat history and tool call result
-    followup = client.chat.completions.create(
-        model="gpt-5-mini",
-        messages=[
-            {"role": "user", "content": analyze_results["usr_input"]},
-            analyze_results["choice"],
-            *analyze_results["tool_results"]
-        ]
-    )
+    with start_span("chat_completion", type="llm") as span:
+        # add chat history and tool call result
+        followup = client.chat.completions.create(
+            model="gpt-5-mini",
+            messages=[
+                {"role": "user", "content": analyze_results["usr_input"]},
+                analyze_results["choice"],
+                *analyze_results["tool_results"]
+            ]
+        )
+
+        span.log(
+            input=analyze_results["usr_input"]
+        )
 
     pprint(followup.choices[0].message)
 
