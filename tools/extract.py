@@ -1,13 +1,18 @@
 import braintrust
+from braintrust import init_logger, traced
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from tavily import TavilyClient
 
+
 load_dotenv()
 tavily_key = os.getenv("TAVILY_API_KEY")
 tavily_client = TavilyClient(api_key=tavily_key)
 braintrust_project_name = os.getenv("BRAINTRUST_PROJECT_NAME")
+braintrust_api_key = os.getenv("BRAINTRUST_API_KEY")
+braintrust_project_id = os.getenv("BRAINTRUST_PROJECT_ID")
+logger = init_logger(project="PoliticalSlant", api_key=braintrust_api_key)
 
 project = braintrust.projects.create(braintrust_project_name)
 
@@ -36,6 +41,7 @@ definition = {
     }
   }
 
+@traced
 def extract(url: str):
     urls = [url]
     response = tavily_client.extract(urls=urls, include_images=False, extract_depth="advanced")
