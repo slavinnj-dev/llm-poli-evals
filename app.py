@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from braintrust import init_logger, load_prompt, wrap_openai
@@ -15,8 +16,12 @@ braintrust_project_id = os.getenv("BRAINTRUST_PROJECT_ID")
 logger = init_logger(project="PoliticalSlant", api_key=braintrust_api_key)
 
 # setup tools
+# TODO: is 'tools' needed?
 tool_definition = extract.definition
 tools = [extract]
+tool_registry = {
+    "extract_web_content": extract.extract
+}
 
 # load the prompt from Braintrust, specify a version to load different variants
 prompt_object = load_prompt(project="PoliticalSlant", 
@@ -34,7 +39,38 @@ client = wrap_openai(OpenAI(
                      "x-bt-parent": f"project_id:{braintrust_project_id}"
                      },
 ))
-prompt = prompt_object.build(input=check_url)
+
+# construct input as user message
+usr_input = f"Analyze this article: {check_url}"
+
+prompt = prompt_object.build(input=usr_input)
 response = client.chat.completions.create(**prompt)
 # TODO: need to execute the tool call and add msg
-pprint(response)
+
+# get tool calls from the response
+choice = response.choices[0].message
+tool_calls = choice.tool_calls
+
+# execute tool calls
+tool_results = []
+for call in tool_calls:
+    fn = tool_registry[call.function.name]
+    args = json.loads(call.function.arguments)
+    result = fn(**args)
+    tool_results.append({
+        "role": "tool",
+        "tool_call_id": call.id,
+        "content": json.dumps(result)
+    })
+
+# add chat history and tool call result
+followup = client.chat.completions.create(
+    model="gpt-5-mini",
+    messages=[
+        {"role": "user", "content": usr_input},
+        choice,
+        *tool_results
+    ]
+)
+
+pprint(followup.choices[0].message)
