@@ -43,7 +43,7 @@ client = wrap_openai(OpenAI(
 
 @traced
 def analyze(url: str):
-    usr_input = f"Analyze this article: {url}"
+    usr_input = f"Is this article biased?: {url}"
     prompt = prompt_object.build(input=usr_input)
     response = client.chat.completions.create(**prompt)
 
